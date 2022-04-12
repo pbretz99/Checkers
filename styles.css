@@ -4,22 +4,7 @@ body {
 
 div.board {
      position: absolute;
-     background-color: blueviolet;
-     height: 30vmin;
-     width: 30vmin;
-}
-
-div.tile {
-     position: absolute;
-     text-align: center;
-     height: 10vmin;
-     width: 10vmin;
-}
-.black {
      background-color: black;
-     color: white;
-}
-.red {
-     background-color: red;
-     color: white;
+     height: 80vmin;
+     width: 80vmin;
 }
