@@ -2,14 +2,18 @@ body {
      background-color: powderblue;
 }
 
+div.board {
+     position: absolute;
+     background-color: blueviolet;
+     height: 30vmin;
+     width: 30vmin;
+}
+
 div.tile {
      position: absolute;
-     border-style: solid;
-     border-width: 1vmin;
-     border-color: white;
      text-align: center;
-     height: 8vmin;
-     width: 8vmin;
+     height: 10vmin;
+     width: 10vmin;
 }
 .black {
      background-color: black;

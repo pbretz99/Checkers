@@ -22,7 +22,7 @@ window.onload = function () {
 
      var Board = {
           board: gameBoard,
-          tilesElement: document.getElementById("div.tiles"),
+          tilesElement: document.getElementById("tiles"),
           initialize: function () {
                var countTiles = 0;
                for (let row in this.board) {
@@ -37,9 +37,9 @@ window.onload = function () {
                } else {
                     let tileColor = "red";
                }
-               this.tilesElement.append(`<div class="tile ${tileColor}" id="tile${countTiles}" style="top:${row*10}vm;left:${column*10}vm;"</div>`)*/
-               this.tilesElement.append(`<div class="tile red" id="tile${countTiles}" style="top:${row*10}vm;left:${column*10}vm;"</div>`)
-               return countTiles + 1
+               this.tilesElement.append(`<div class="tile ${tileColor}" id="tile${countTiles}" style="top:${row*10}vm;left:${column*10}vm;"</div>`);*/
+               this.tilesElement.append(`<div class="tile red" id="tile${countTiles}" style="top:${row*10}vm;left:${column*10}vm;"></div>`);
+               return countTiles + 1;
           }
      }
 
