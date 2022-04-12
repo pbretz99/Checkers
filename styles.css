@@ -1,0 +1,21 @@
+body {
+     background-color: powderblue;
+}
+
+div.tile {
+     position: absolute;
+     border-style: solid;
+     border-width: 1vmin;
+     border-color: white;
+     text-align: center;
+     height: 8vmin;
+     width: 8vmin;
+}
+.black {
+     background-color: black;
+     color: white;
+}
+.red {
+     background-color: red;
+     color: white;
+}
