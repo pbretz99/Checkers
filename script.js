@@ -43,18 +43,3 @@ window.onload = function () {
           }
      }
 }
-
-/*
-//Initialize the checkerboard
-function initialize() {
-     let boardElement = document.getElementById("board");
-     let tileCount = 0;
-     for (let row = 0; row < 8; row++) {
-          for (let column = 0; column < 8; column++) {
-               let newTile = createTile(row, column, tileCount);
-               boardElement.appendChild(newTile.element);
-               tileCount += 1;
-          }
-     }
-}
-*/
