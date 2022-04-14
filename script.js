@@ -103,6 +103,22 @@ function deselectPiece(moveTiles, piece) {
      piece.selected = false;
 }
 
+//Move piece to tile
+function movePiece(piece, newTile, moveTiles) {
+     if (piece.selected) {
+          piece.tile.pieces = [];
+          newTile.pieces = [piece];
+          piece.tile = newTile;
+          piece.element.style.top = `${newTile.row*10+1}vmin`;
+          piece.element.style.left = `${newTile.column*10+1}vmin`;
+          piece.selected = false;
+          for (tile of moveTiles) {tile.unshade();}
+          //document.getElementById("testing").innerHTML += `Move ${piece.id} to ${newTile.id}<br>`;
+     }
+}
+
+//Set to next player
+
 //Initialize board and pieces
 window.onload = function () {
      
@@ -112,11 +128,17 @@ window.onload = function () {
           dimensions: [8, 8],
           tiles: [],
           pieces: [],
-          players: [{id: "player1"}, {id: "player2"}],
+          players: [{id: "player1", current: true}, {id: "player2", current: false}],
+
+          currentPlayer: function () {
+               if (this.players[0].current) {return this.players[0];}
+               else {return this.players[1];}
+          },
 
           initialize: function () {
                this.initializeTiles();
                this.initializePieces();
+               this.playerMovesShow(this.currentPlayer())
           },
           
           initializeTiles: function () {
@@ -166,6 +188,9 @@ window.onload = function () {
                          let moves = this.availableMoves(piece);
                          if (moves.length > 0) {
                               piece.element.addEventListener("click", function(){selectPieceWrapper(moves, piece, allTiles, allPieces)});
+                              for (let tile of moves) {
+                                   tile.element.addEventListener("click", function(){movePiece(piece, tile, moves)})
+                              }
                          }
                     }
                }
@@ -198,6 +223,6 @@ window.onload = function () {
      }
      
      board.initialize();
-     board.playerMovesShow(board.players[0]);
+     //board.playerMovesShow(board.players[0]);
      
 }
