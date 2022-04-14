@@ -51,41 +51,21 @@ function initialPieceSetUp(row, column) {
 function createTile (row, column, tileCount) {
      let newTileElement = document.createElement("div"),
      color = "black", altColor = "black";
-     if (onDiagonal(row, column) == 1) {
-          color = "red", altColor = "darkred";
-     }
+     if (onDiagonal(row, column) == 1) {color = "red", altColor = "darkred";}
      tileCSS(newTileElement, row, column, tileCount, color);
      return {element: newTileElement,
           id: `tile${tileCount}`,
           row: row, column: column,
           pieces: [],
-          shade: function () {
-               this.element.style.backgroundColor = altColor;
-          },
-          unshade: function () {
-               this.element.style.backgroundColor = color;
-          }};
-}
-
-//Switch background color of element between color and altColor
-function colorSwitch(element, color, altColor) {
-     let bgdColor = element.style.backgroundColor;
-     if (bgdColor != altColor) {
-          element.style.backgroundColor = altColor;
-     } else {
-          element.style.backgroundColor = color;
-     }
+          shade: function () {this.element.style.backgroundColor = altColor;},
+          unshade: function () {this.element.style.backgroundColor = color;}};
 }
 
 //Create a new piece
 function createPiece (tile, pieceCount, player) {
      let newPieceElement = document.createElement("div"),
-     color = "red",
-     borderColor = "salmon";
-     if (player.id == "player2") {
-          color = "black",
-          borderColor = "gray";
-     }
+     color = "red", borderColor = "salmon";
+     if (player.id == "player2") {color = "black", borderColor = "gray";}
      pieceCSS(newPieceElement, tile.row, tile.column, pieceCount, color, borderColor);
      return {element: newPieceElement, tile: tile, id: newPieceElement.id, player: player, selected: false};
 }
