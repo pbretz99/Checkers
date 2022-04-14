@@ -49,18 +49,31 @@ function initialPieceSetUp(row, column) {
 //Create a new tile
 function createTile (row, column, tileCount) {
      let newTileElement = document.createElement("div"),
-     color = "black";
+     color = "black", altColor = "black";
      if (onDiagonal(row, column) == 1) {
-          color = "red";
+          color = "red", altColor = "darkred";
      }
      tileCSS(newTileElement, row, column, tileCount, color);
      return {element: newTileElement,
-          id: newTileElement.id,
-          position: [row, column]};
+          id: `tile${tileCount}`,
+          row: row, column: column,
+          shade: function () {
+               colorSwitch(this.element, color, altColor);
+          }};
+}
+
+//Switch background color of element between color and altColor
+function colorSwitch(element, color, altColor) {
+     let bgdColor = element.style.backgroundColor;
+     if (bgdColor != altColor) {
+          element.style.backgroundColor = altColor;
+     } else {
+          element.style.backgroundColor = color;
+     }
 }
 
 //Create a new piece
-function createPiece (row, column, pieceCount, player) {
+function createPiece (tile, pieceCount, player) {
      let newPieceElement = document.createElement("div"),
      color = "red",
      borderColor = "salmon";
@@ -68,12 +81,13 @@ function createPiece (row, column, pieceCount, player) {
           color = "black",
           borderColor = "gray";
      }
-     pieceCSS(newPieceElement, row, column, pieceCount, color, borderColor);
-     return {element: newPieceElement, id: newPieceElement.id, position: [row, column], player: player};
+     pieceCSS(newPieceElement, tile.row, tile.column, pieceCount, color, borderColor);
+     return {element: newPieceElement, tile: tile, id: newPieceElement.id, player: player};
 }
 
 //Initialize board and pieces
 window.onload = function () {
+     
      const board = {
           
           element: document.getElementById("board"),
@@ -83,16 +97,15 @@ window.onload = function () {
 
           initialize: function () {
                this.initializeTiles();
-               //this.initializePieces();
+               this.initializePieces();
           },
           
           initializeTiles: function () {
                let tileCount = 0;
                for (let row = 0; row < 8; row++) {
                     for (let column = 0; column < 8; column++) {
-                         let newTile = createTile(row, column, tileCount);
-                         this.tiles.push(newTile);
-                         this.element.appendChild(newTile.element);
+                         this.tiles[tileCount] = new createTile(row, column, tileCount);
+                         this.element.appendChild(this.tiles[tileCount].element);
                          tileCount += 1;
                     }
                }
@@ -100,23 +113,47 @@ window.onload = function () {
 
           initializePieces: function () {
                let pieceCount = 0;
-               for (let row = 0; row < 8; row++) {
-                    for (let column = 0; column < 8; column++) {
-                         if (initialPieceSetUp(row, column) != 0) {
-                              let player = this.players[0];
-                              if (initialPieceSetUp(row, column) == 2) {
-                                   player = this.players[1];
-                              }
-                              let newPiece = createPiece(row, column, pieceCount, player);
-                              this.pieces.push(newPiece);
-                              this.element.appendChild(newPiece.element);
-                              pieceCount += 1;
+               for (t in this.tiles) {
+                    let tile = this.tiles[t];
+                    if (initialPieceSetUp(tile.row, tile.column) != 0) {
+                         let player = this.players[0];
+                         if (initialPieceSetUp(tile.row, tile.column) == 2) {
+                              player = this.players[1];
                          }
+                         this.pieces[pieceCount] = new createPiece(tile, pieceCount, player);
+                         this.element.appendChild(this.pieces[pieceCount].element);
+                         //this.pieces[pieceCount] = {id: `piece${pieceCount}`};
+                         pieceCount += 1;
                     }
                }
+          },
+
+          printTiles: function () {
+               let testBox = document.getElementById("testing"),
+               text = "Positions: ";
+               for (t in this.tiles) {
+                    let tile = this.tiles[t];
+                    text += ` (${tile.row}, ${tile.column})`;
+               }
+               testBox.innerHTML = text;
+          },
+
+          printPieces: function () {
+               let testBox = document.getElementById("testing"),
+               text = "Names: ";
+               for (p in this.pieces) {
+                    let piece = this.pieces[p];
+                    text += ` (${piece.id})`;
+               }
+               testBox.innerHTML = text;
           }
 
      }
      
-     board.initialize();
+     board.initializeTiles();
+     board.initializePieces();
+     //board.printTiles();
+     //board.printPieces();
+     board.pieces[9].element.addEventListener("click", function(){board.tiles[25].shade(); board.tiles[27].shade()})
+
 }
