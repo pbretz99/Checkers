@@ -58,16 +58,24 @@ function createTile (row, column, tileCount) {
           row: row, column: column,
           pieces: [],
           shade: function () {this.element.style.backgroundColor = altColor;},
-          unshade: function () {this.element.style.backgroundColor = color;}};
+          unshade: function () {this.element.style.backgroundColor = color;}
+     };
 }
 
 //Create a new piece
 function createPiece (tile, pieceCount, player) {
      let newPieceElement = document.createElement("div"),
-     color = "red", borderColor = "salmon";
-     if (player.id == "player2") {color = "black", borderColor = "gray";}
+     color = "red", altColor = "darkred", borderColor = "salmon";
+     if (player.id == "player2") {color = "black", altColor = "darkslategray", borderColor = "gray";}
      pieceCSS(newPieceElement, tile.row, tile.column, pieceCount, color, borderColor);
-     return {element: newPieceElement, tile: tile, id: newPieceElement.id, player: player, selected: false};
+     return {element: newPieceElement,
+          tile: tile,
+          id: newPieceElement.id,
+          player: player,
+          selected: false,
+          shade: function () {this.element.style.backgroundColor = altColor;},
+          unshade: function () {this.element.style.backgroundColor = color;}
+     };
 }
 
 //Get positions diagonally adjacent to [row, column]
@@ -90,10 +98,11 @@ function selectPieceWrapper(moveTiles, piece, allTiles, allPieces) {
 //Piece selecting
 function selectPiece(moveTiles, piece, allTiles, allPieces) {
      for (tile of allTiles) {tile.unshade();}
-     for (otherPiece of allPieces) {otherPiece.selected = false;}
+     for (otherPiece of allPieces) {otherPiece.selected = false; otherPiece.unshade();}
      //document.getElementById("testing").innerHTML += `selected ${piece.id}<br>`;
      for (tile of moveTiles) {tile.shade();}
-     piece.selected = true; 
+     piece.selected = true;
+     piece.shade();
 }
 
 //Piece de-selecting
@@ -101,23 +110,120 @@ function deselectPiece(moveTiles, piece) {
      //document.getElementById("testing").innerHTML += `de-selected ${piece.id}<br>`;
      for (tile of moveTiles) {tile.unshade();}
      piece.selected = false;
+     piece.unshade();
 }
 
-//Move piece to tile
-function movePiece(piece, newTile, moveTiles) {
+
+//Move piece event wrapper
+function movePieceWrapper(piece, newTile, moveTiles, allTiles, allPieces, boardElement, maxRow, maxCol, players) {
      if (piece.selected) {
-          piece.tile.pieces = [];
-          newTile.pieces = [piece];
-          piece.tile = newTile;
-          piece.element.style.top = `${newTile.row*10+1}vmin`;
-          piece.element.style.left = `${newTile.column*10+1}vmin`;
-          piece.selected = false;
-          for (tile of moveTiles) {tile.unshade();}
+          movePiece(piece, newTile, moveTiles);
+          clearAllListeners(boardElement, allTiles, allPieces);
+          setPlayer(otherPlayer(piece.player, players), maxRow, maxCol, allTiles, allPieces, boardElement, players);
           //document.getElementById("testing").innerHTML += `Move ${piece.id} to ${newTile.id}<br>`;
      }
 }
 
-//Set to next player
+//Move piece to new tile
+function movePiece(piece, newTile, moveTiles) {
+     piece.tile.pieces = [];
+     newTile.pieces = [piece];
+     piece.tile = newTile;
+     piece.element.style.top = `${newTile.row*10+1}vmin`;
+     piece.element.style.left = `${newTile.column*10+1}vmin`;
+     piece.selected = false;
+     piece.unshade();
+     for (tile of moveTiles) {tile.unshade();}
+}
+
+//Remove all the listeners
+function clearAllListeners(boardElement, tiles, pieces) {
+     for (tile of tiles) {
+          clearTileListeners(tile, boardElement);
+     }
+     for (piece of pieces) {
+          clearPieceListeners(piece, boardElement);
+     }
+}
+
+//Clear listeners from a tile
+function clearTileListeners(tile, boardElement) {
+     let newElement = tile.element.cloneNode(true);
+     boardElement.replaceChild(newElement, tile.element);
+     tile.element = newElement;
+}
+
+//Clear listeners from a piece
+function clearPieceListeners(piece, boardElement) {
+     let newElement = piece.element.cloneNode(true);
+     boardElement.replaceChild(newElement, piece.element);
+     piece.element = newElement;
+}
+
+//Set player
+function setPlayer(player, maxRow, maxCol, tiles, pieces, boardElement, players) {
+     for (let piece of pieces) {
+          if (piece.player == player) {
+               let moves = availableMoves(piece, maxRow, maxCol, tiles);
+               if (moves.length > 0) {
+                    piece.element.addEventListener("click", function(){selectPieceWrapper(moves, piece, tiles, pieces)});
+                    for (let tile of moves) {
+                         tile.element.addEventListener("click", function(){movePieceWrapper(piece, tile, moves, tiles, pieces, boardElement, maxRow, maxCol, players)})
+                    }
+               }
+          }
+     }
+}
+
+//Simple function to get opposite player
+function otherPlayer(player, players) {
+     for (potentialPlayer of players) {
+          if (potentialPlayer != player) {
+               return potentialPlayer;
+          }
+     }
+}
+
+//Available moves to a piece
+function availableMoves(piece, maxRow, maxCol, tiles) {
+     let moves = [], potentialPos=diagonalPositions(piece.tile.row, piece.tile.column);
+     for (pos of potentialPos) {
+          let validMove = true;
+          if (!onBoard(pos[0], pos[1], maxRow, maxCol)) {validMove = false;}
+          else if (occupied(pos[0], pos[1], maxRow, maxCol, tiles)) {validMove = false;}
+          else if ((piece.player.id == "player1") & (pos[0] < piece.tile.row)) {validMove = false;}
+          else if ((piece.player.id == "player2") & (pos[0] > piece.tile.row)) {validMove = false;}
+          if (validMove) {moves.push(accessTile(pos[0], pos[1], maxRow, maxCol, tiles));}
+     }
+     return moves;
+}
+
+//Is (row, column) on the board
+function onBoard(row, column, maxRow, maxCol) {
+     let isOnBoard = true;
+     if (row < 0) {isOnBoard = false;}
+     else if (column < 0) {isOnBoard = false;}
+     else if (row >= maxRow) {isOnBoard = false;}
+     else if (column >= maxCol) {isOnBoard = false;}
+     return isOnBoard;
+}
+
+//Is tile occupied
+function occupied(row, column, maxRow, maxCol, tiles) {
+     let isOccupied = false, tile = accessTile(row, column, maxRow, maxCol, tiles);
+     if (tile.pieces.length > 0) {isOccupied = true;}
+     return isOccupied;
+}
+
+//Get tile from list
+function accessTile(row, column, maxRow, maxCol, tiles) {
+     if (onBoard(row, column, maxRow, maxCol)) {
+          let index = row * maxCol + column;
+          return tiles[index];
+     } else {
+          return 0;
+     }
+}
 
 //Initialize board and pieces
 window.onload = function () {
@@ -128,17 +234,12 @@ window.onload = function () {
           dimensions: [8, 8],
           tiles: [],
           pieces: [],
-          players: [{id: "player1", current: true}, {id: "player2", current: false}],
-
-          currentPlayer: function () {
-               if (this.players[0].current) {return this.players[0];}
-               else {return this.players[1];}
-          },
+          players: [{id: "player1"}, {id: "player2"}],
 
           initialize: function () {
                this.initializeTiles();
                this.initializePieces();
-               this.playerMovesShow(this.currentPlayer())
+               this.initializePlayer(this.players[0]);
           },
           
           initializeTiles: function () {
@@ -168,58 +269,10 @@ window.onload = function () {
                }
           },
 
-          availableMoves: function (piece) {
-               let moves = [], potentialPos=diagonalPositions(piece.tile.row, piece.tile.column);
-               for (pos of potentialPos) {
-                    let validMove = true;
-                    if (!this.onBoard(pos[0], pos[1])) {validMove = false;}
-                    else if (this.occupied(pos[0], pos[1])) {validMove = false;}
-                    else if ((piece.player.id == "player1") & (pos[0] < piece.tile.row)) {validMove = false;}
-                    else if ((piece.player.id == "player2") & (pos[0] > piece.tile.row)) {validMove = false;}
-                    if (validMove) {moves.push(this.accessTile(pos[0], pos[1]));}
-               }
-               return moves;
-          },
-
-          playerMovesShow: function (player) {
-               let allTiles = this.tiles, allPieces = this.pieces;
-               for (let piece of this.pieces) {
-                    if (piece.player == player) {
-                         let moves = this.availableMoves(piece);
-                         if (moves.length > 0) {
-                              piece.element.addEventListener("click", function(){selectPieceWrapper(moves, piece, allTiles, allPieces)});
-                              for (let tile of moves) {
-                                   tile.element.addEventListener("click", function(){movePiece(piece, tile, moves)})
-                              }
-                         }
-                    }
-               }
-          },
-
-          onBoard: function (row, column) {
-               let isOnBoard = true;
-               if (row < 0) {isOnBoard = false;}
-               else if (column < 0) {isOnBoard = false;}
-               else if (row >= this.dimensions[0]) {isOnBoard = false;}
-               else if (column >= this.dimensions[1]) {isOnBoard = false;}
-               return isOnBoard;
-          },
-
-          occupied: function (row, column) {
-               let isOccupied = false, tile = this.accessTile(row, column);
-               if (tile.pieces.length > 0) {isOccupied = true;}
-               return isOccupied;
-          },
-
-          accessTile: function(row, column) {
-               if (this.onBoard(row, column)) {
-                    let index = row * this.dimensions[1] + column;
-                    return this.tiles[index];
-               } else {
-                    return 0;
-               }
-          },
-
+          initializePlayer: function (player) {
+               let maxRow = this.dimensions[0], maxCol = this.dimensions[1], allTiles = this.tiles, allPieces = this.pieces, boardElement = this.element, players=this.players;
+               setPlayer(player, maxRow, maxCol, allTiles, allPieces, boardElement, players);
+          }
      }
      
      board.initialize();
