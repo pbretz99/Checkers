@@ -5,6 +5,4 @@ body {
 div.board {
      position: absolute;
      background-color: blue;
-     height: 80vmin;
-     width: 80vmin;
 }
