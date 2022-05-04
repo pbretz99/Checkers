@@ -63,7 +63,7 @@ function createTile (row, column, tileCount) {
 }
 
 //Create a new piece
-function createPiece (tile, pieceCount, player) {
+function createPiece(tile, pieceCount, player) {
      let newPieceElement = document.createElement("div"),
      color = "red", altColor = "darkred", borderColor = "salmon";
      if (player.id == "player2") {color = "black", altColor = "darkslategray", borderColor = "gray";}
@@ -78,8 +78,25 @@ function createPiece (tile, pieceCount, player) {
      };
 }
 
+//Delete a piece (both the element and the board entry)
+function deletePiece(piece, pieces) {
+     let element = piece.element;
+     //Identify index
+     let ind = 0, i = 0;
+     for (let otherPiece of pieces) {
+          if (otherPiece == piece) {
+               ind = i;
+          }
+          i += 1;
+     }
+     //Remove board entry
+     pieces.splice(ind, 1);
+     //Remove HTML element
+     element.remove();
+}
+
 //Get positions diagonally adjacent to [row, column]
-function diagonalPositions(row, column) {
+function adjacentPositions(row, column) {
      let positions = [];
      for (let i = -1; i < 2; i+=2) {
           for (let j = -1; j < 2; j+=2) {
@@ -117,7 +134,7 @@ function deselectPiece(moveTiles, piece) {
 //Move piece event wrapper
 function movePieceWrapper(piece, newTile, moveTiles, allTiles, allPieces, boardElement, maxRow, maxCol, players) {
      if (piece.selected) {
-          movePiece(piece, newTile, moveTiles);
+          movePiece(piece, newTile, moveTiles, maxRow, maxCol, allTiles, allPieces);
           clearAllListeners(boardElement, allTiles, allPieces);
           setPlayer(otherPlayer(piece.player, players), maxRow, maxCol, allTiles, allPieces, boardElement, players);
           //document.getElementById("testing").innerHTML += `Move ${piece.id} to ${newTile.id}<br>`;
@@ -125,7 +142,14 @@ function movePieceWrapper(piece, newTile, moveTiles, allTiles, allPieces, boardE
 }
 
 //Move piece to new tile
-function movePiece(piece, newTile, moveTiles) {
+function movePiece(piece, newTile, moveTiles, maxRow, maxCol, tiles, pieces) {
+     
+     if (jumpMove(piece.tile, newTile)) {
+          //document.getElementById("testing").innerHTML += 'Jump!';
+          deletePiece(jumpedPiece(piece.tile, newTile, maxRow, maxCol, tiles), pieces);
+     }
+
+     
      piece.tile.pieces = [];
      newTile.pieces = [piece];
      piece.tile = newTile;
@@ -134,6 +158,21 @@ function movePiece(piece, newTile, moveTiles) {
      piece.selected = false;
      piece.unshade();
      for (tile of moveTiles) {tile.unshade();}
+}
+
+//Returns true if move is a jump (technically, if the rows differ by 2)
+function jumpMove(currentTile, newTile) {
+     let isJumpMove = false;
+     if (Math.abs(currentTile.row - newTile.row) == 2) {isJumpMove = true;}
+     return isJumpMove;
+}
+
+// Check if this function works too
+function jumpedPiece(currentTile, newTile, maxRow, maxCol, tiles) {
+     let jumpedRow = Math.round((currentTile.row + newTile.row) / 2),
+     jumpedColumn = Math.round((currentTile.column + newTile.column) / 2);
+     let jumpedTile = accessTile(jumpedRow, jumpedColumn, maxRow, maxCol, tiles);
+     return jumpedTile.pieces[0];
 }
 
 //Remove all the listeners
@@ -175,7 +214,7 @@ function setPlayer(player, maxRow, maxCol, tiles, pieces, boardElement, players)
      }
 }
 
-//Simple function to get opposite player
+//Get opposite player
 function otherPlayer(player, players) {
      for (potentialPlayer of players) {
           if (potentialPlayer != player) {
@@ -186,16 +225,38 @@ function otherPlayer(player, players) {
 
 //Available moves to a piece
 function availableMoves(piece, maxRow, maxCol, tiles) {
-     let moves = [], potentialPos=diagonalPositions(piece.tile.row, piece.tile.column);
-     for (pos of potentialPos) {
-          let validMove = true;
-          if (!onBoard(pos[0], pos[1], maxRow, maxCol)) {validMove = false;}
-          else if (occupied(pos[0], pos[1], maxRow, maxCol, tiles)) {validMove = false;}
-          else if ((piece.player.id == "player1") & (pos[0] < piece.tile.row)) {validMove = false;}
-          else if ((piece.player.id == "player2") & (pos[0] > piece.tile.row)) {validMove = false;}
-          if (validMove) {moves.push(accessTile(pos[0], pos[1], maxRow, maxCol, tiles));}
+     let moves = [], jumpPositions = [], potentialPos=adjacentPositions(piece.tile.row, piece.tile.column);
+     for (let pos of potentialPos) {
+          let row = pos[0], col = pos[1];
+          if (validMove(piece, row, col, maxRow, maxCol, tiles)) {
+               moves.push(accessTile(row, col, maxRow, maxCol, tiles));
+          }
+          if (occupied(row, col, maxRow, maxCol, tiles)) {
+               jumpPositions.push(jumpPosition(piece.tile.row, piece.tile.column, row, col));
+          }
+     }
+     for (let jumpPos of jumpPositions) {
+          let row = jumpPos[0], col = jumpPos[1];
+          if (validMove(piece, row, col, maxRow, maxCol, tiles)) {
+               moves.push(accessTile(row, col, maxRow, maxCol, tiles));
+          }
      }
      return moves;
+}
+
+//Determine if move is valid
+function validMove(piece, row, column, maxRow, maxCol, tiles) {
+     let isValidMove = true;
+     if (!onBoard(row, column, maxRow, maxCol)) {isValidMove = false;}
+     else if ((piece.player.id == "player1") & (row < piece.tile.row)) {isValidMove = false;}
+     else if ((piece.player.id == "player2") & (row > piece.tile.row)) {isValidMove = false;}
+     else if (occupied(row, column, maxRow, maxCol, tiles)) {isValidMove = false;}
+     return isValidMove;
+}
+
+//Next position in line from [row, column] to [newRow, newColumn]
+function jumpPosition(row, column, newRow, newColumn) {
+     return [newRow + (newRow - row), newColumn + (newColumn - column)];
 }
 
 //Is (row, column) on the board
@@ -210,6 +271,7 @@ function onBoard(row, column, maxRow, maxCol) {
 
 //Is tile occupied
 function occupied(row, column, maxRow, maxCol, tiles) {
+     if (!onBoard(row, column, maxRow, maxCol)) {return false;}
      let isOccupied = false, tile = accessTile(row, column, maxRow, maxCol, tiles);
      if (tile.pieces.length > 0) {isOccupied = true;}
      return isOccupied;
